@@ -1,0 +1,38 @@
+{
+  "name": "glsl-transition-vignette",
+  "version": "0.1.0",
+  "description": "A React component which display a GLSL Transition as a vignette (with hover and click controls)",
+  "main": "index.js",
+  "peerDependencies": {
+    "react": ">=0.12.0 <0.14.0"
+  },
+  "browserify": {
+    "transform": [
+      "reactify"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:glslio/glsl-transition-vignette.git"
+  },
+  "keywords": [
+    "glsl-transition",
+    "react",
+    "vignette"
+  ],
+  "author": "Gaëtan Renaudeau",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/glslio/glsl-transition-vignette/issues"
+  },
+  "homepage": "https://github.com/glslio/glsl-transition-vignette",
+  "dependencies": {
+    "glsl-transition": "^0.7.0",
+    "lodash": "^3.6.0",
+    "q": "^1.2.0",
+    "raf": "^2.0.4"
+  },
+  "devDependencies": {
+    "reactify": "^1.1.0"
+  }
+}

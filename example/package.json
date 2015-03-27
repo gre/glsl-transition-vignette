@@ -1,0 +1,20 @@
+{
+  "name": "glsl-transition-vignette-example",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "beefy index.js"
+  },
+  "browserify": {
+    "transform": [
+      "reactify"
+    ]
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "browserify": "^9.0.3",
+    "reactify": "^1.1.0"
+  }
+}

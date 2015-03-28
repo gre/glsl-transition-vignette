@@ -1,7 +1,7 @@
 {
   "name": "glsl-transition-vignette",
   "version": "0.1.0",
-  "description": "A React component which display a GLSL Transition as a vignette (with hover and click controls)",
+  "description": "A React component which displays a GLSL Transition as a vignette (with hover and click controls)",
   "main": "index.js",
   "peerDependencies": {
     "react": ">=0.12.0 <0.14.0"

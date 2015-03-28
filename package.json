@@ -1,6 +1,6 @@
 {
   "name": "glsl-transition-vignette",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "customizable GLSL Transition Vignette with hover controls",
   "main": "index.js",
   "peerDependencies": {

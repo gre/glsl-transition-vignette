@@ -2,11 +2,9 @@ import React from "react";
 import Vignette from "..";
 import GlslTransitions from "glsl-transitions";
 
-var tnames = [ "swap", "cube", "ButterflyWaveScrawler", "doorway" ];
-
-var transitions = tnames.map(function (name) {
-  return GlslTransitions.filter(t => t.name === name)[0];
-});
+var transitions =
+  [ "swap", "cube", "ButterflyWaveScrawler", "doorway" ]
+  .map(name => GlslTransitions.filter(t => t.name === name)[0]);
 
 var vignetteStyle = {
   display: "inline-block",

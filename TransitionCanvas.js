@@ -1,8 +1,7 @@
-/** @jsx React.DOM */
-var React = require("react");
-var extend = require('lodash/object/extend');
-var GlslTransition = require("glsl-transition");
-var uniformsEquals = require("./uniformsEquals");
+import React from "react";
+import extend from 'lodash/object/extend';
+import GlslTransition from "glsl-transition";
+import uniformsEquals from "./uniformsEquals";
 
 var validSampler2D = React.PropTypes.oneOfType([
   React.PropTypes.instanceOf(window.HTMLImageElement),
@@ -16,31 +15,30 @@ var TransitionCanvas = React.createClass({
     from: validSampler2D,
     to: validSampler2D,
     uniforms: React.PropTypes.object.isRequired,
-    width: React.PropTypes.number.isRequired, // TODO handle width/height changes@
+    width: React.PropTypes.number.isRequired, // TODO handle width/height changes
     height: React.PropTypes.number.isRequired,
     progress: React.PropTypes.number.isRequired
   },
-  render: function () {
+  render () {
     var dpr = window.devicePixelRatio || 1;
-    var width = this.props.width;
-    var height = this.props.height;
+    var {width, height} = this.props;
     var style = extend({
       width: width+"px",
       height: height+"px"
     }, this.props.style);
     return <canvas width={width*dpr} height={height*dpr} style={style}></canvas>;
   },
-  componentDidMount: function () {
+  componentDidMount () {
     this.running = 0;
     this.Transition = GlslTransition(this.getDOMNode());
     this.componentDidUpdate();
   },
-  componentWillUnmount: function () {
+  componentWillUnmount () {
     if (this.transition) this.transition.destroy();
     this.transition = null;
     this.Transition = null;
   },
-  componentDidUpdate: function () {
+  componentDidUpdate () {
     if (this.props.glsl !== this.lastGlsl) {
       this.syncGlsl();
     }
@@ -61,7 +59,7 @@ var TransitionCanvas = React.createClass({
     this.lastProgress = this.props.progress;
     this.lastGlsl = this.props.glsl;
   },
-  syncGlsl: function () {
+  syncGlsl () {
     var glsl = this.props.glsl;
     if (this.transition) {
       this.Transition.abort();
@@ -75,23 +73,23 @@ var TransitionCanvas = React.createClass({
       console.error(e);
     }
   },
-  syncUniforms: function () {
+  syncUniforms () {
     this.transition.core.reset();
     var uniforms = this.getAllUniforms();
     for (var u in uniforms) {
       this.transition.core.setUniform(u, uniforms[u]);
     }
   },
-  syncProgress: function () {
+  syncProgress () {
     if (!this.running) {
       this.transition.core.setUniform("progress", this.props.progress);
       this.transition.core.draw();
     }
   },
-  getAllUniforms: function () {
+  getAllUniforms () {
     return extend({ from: this.props.from, to: this.props.to }, this.props.uniforms);
   },
-  animate: function (duration, easing) {
+  animate (duration, easing) {
     // this.transition.core.reset(); // FIXME figure out if this is required and if the transition() shouldn't fix that
     var p = this.transition(this.getAllUniforms(), duration, easing);
     this.running++;
@@ -100,9 +98,9 @@ var TransitionCanvas = React.createClass({
     }.bind(this));
     return p;
   },
-  abort: function () {
+  abort () {
     this.Transition.abort();
   }
 });
 
-module.exports = TransitionCanvas;
+export default TransitionCanvas;

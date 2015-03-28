@@ -4,17 +4,23 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "beefy index.js"
+    "start": "budo index.js --live",
+    "build": "browserify index.js | uglifyjs -c -m > build.js"
   },
   "browserify": {
     "transform": [
-      "reactify"
+      "babelify"
     ]
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "babel": "^4.7.16",
+    "babelify": "^5.0.4",
     "browserify": "^9.0.3",
-    "reactify": "^1.1.0"
+    "budo": "^1.0.0"
+  },
+  "dependencies": {
+    "glsl-transitions": "^2015.3.28"
   }
 }

@@ -1,1 +1,2 @@
-module.exports = require("./Vignette");
+import Vignette from "./Vignette";
+export default Vignette;

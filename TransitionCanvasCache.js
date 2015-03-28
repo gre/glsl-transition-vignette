@@ -1,10 +1,9 @@
-/** @jsx React.DOM */
-var React = require("react");
-var Q = require("q");
-var memoize = require("lodash/function/memoize");
-var extend = require('lodash/object/extend');
-var requestAnimationFrame = require("raf");
-var uniformsEquals = require("./uniformsEquals");
+import React from "react";
+import Q from "q";
+import memoize from "lodash/function/memoize";
+import extend from 'lodash/object/extend';
+import requestAnimationFrame from "raf";
+import uniformsEquals from "./uniformsEquals";
 
 var validSampler2D = React.PropTypes.oneOfType([
   React.PropTypes.instanceOf(window.HTMLImageElement),
@@ -34,35 +33,34 @@ var TransitionCanvasCache = React.createClass({
     delay: React.PropTypes.number
     // TODO: add a "thumbnail" image parameter
   },
-  getInitialProps: function () {
+  getInitialProps () {
     return {
       resolution: this.props.width
     };
   },
-  render: function () {
+  render () {
     var dpr = window.devicePixelRatio || 1;
-    var width = this.props.width;
-    var height = this.props.height;
+    var {width, height} = this.props;
     var style = extend({
       width: width+"px",
       height: height+"px"
     }, this.props.style);
     return <canvas width={width*dpr} height={height*dpr} style={style}></canvas>;
   },
-  componentDidMount: function () {
+  componentDidMount () {
     this.ctx = this.getDOMNode().getContext("2d");
     if (this.props.delay)
       setTimeout(this.sync, this.props.delay);
     else
       this.sync();
   },
-  componentWillUnmount: function () {
+  componentWillUnmount () {
     this.clearCache();
   },
-  componentDidUpdate: function () {
+  componentDidUpdate () {
     this.sync();
   },
-  sync: function () {
+  sync () {
     if (!this.isMounted()) return;
     if (this.props.glsl !== this.lastGlsl ||
       this.props.to !== this.lastTo ||
@@ -82,10 +80,10 @@ var TransitionCanvasCache = React.createClass({
     this.lastProgress = this.props.progress;
     this.lastGlsl = this.props.glsl;
   },
-  drawer: function (i) {
+  drawer (i) {
     return screenshot(this.props.drawer(i / this.props.resolution, this._allUniforms));
   },
-  clearCache: function () {
+  clearCache () {
     if (this.canvases) {
       for (var k in this.canvases.cache) {
         delete this.canvases.cache[k];
@@ -94,11 +92,11 @@ var TransitionCanvasCache = React.createClass({
       this.canvases = null;
     }
   },
-  resetCache: function () {
+  resetCache () {
     this.clearCache();
     this.canvases = memoize(this.drawer);
   },
-  setProgress: function (p) {
+  setProgress (p) {
     var i = Math.max(0, Math.min(Math.round(p * this.props.resolution), this.props.resolution));
     if (this.canvases) {
       var canvas = this.canvases(i);
@@ -107,7 +105,7 @@ var TransitionCanvasCache = React.createClass({
       }
     }
   },
-  animate: function (duration, easing) {
+  animate (duration, easing) {
     var d = Q.defer();
     var start = Date.now();
     var self = this;
@@ -129,9 +127,9 @@ var TransitionCanvasCache = React.createClass({
     });
     return d.promise;
   },
-  abort: function () {
+  abort () {
     this.abortRequest = true;
   }
 });
 
-module.exports = TransitionCanvasCache;
+export default TransitionCanvasCache;

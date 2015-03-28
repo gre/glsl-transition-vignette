@@ -30,6 +30,7 @@ var Vignette = React.createClass({
     transitionDuration: React.PropTypes.number,
     transitionDelay: React.PropTypes.number,
     transitionEasing: React.PropTypes.func,
+    cursorColor: React.PropTypes.string,
     controlsMode: React.PropTypes.oneOf([ HOVER, MOUSEDOWN, NONE ]),
     cache: React.PropTypes.shape({
       drawer: React.PropTypes.func.isRequired,
@@ -39,7 +40,7 @@ var Vignette = React.createClass({
     onTransitionPerformed: React.PropTypes.func
   },
 
-  getDefaultProps: function () {
+  getDefaultProps () {
     return {
       controlsMode: HOVER,
       autostart: false,
@@ -48,11 +49,12 @@ var Vignette = React.createClass({
       onTransitionPerformed: function(){},
       transitionDuration: 1500,
       transitionDelay: 100,
-      transitionEasing: function(x){ return x; }
+      transitionEasing: x => x,
+      cursorColor: "#FC6"
     };
   },
 
-  getInitialState: function () {
+  getInitialState() {
     return {
       hover: false,
       progress: this.props.defaultProgress,
@@ -61,11 +63,11 @@ var Vignette = React.createClass({
     };
   },
 
-  getImageUrlsToPreload: function () {
+  getImageUrlsToPreload() {
     return this.props.images;
   },
 
-  componentDidUpdate: function() {
+  componentDidUpdate() {
     if (!this._neverStarted && this.preloadImages()) {
       this._neverStarted = true;
       if (this.props.autostart)
@@ -73,18 +75,9 @@ var Vignette = React.createClass({
     }
   },
 
-  render: function() {
-    var controlsMode = this.props.controlsMode;
-    var width = this.props.width;
-    var height = this.props.height;
-    var images = this.props.images;
-    var glsl = this.props.glsl;
-    var progress = this.state.progress;
-    var uniforms = this.props.uniforms;
-    var cursorEnabled = this.state.cursorEnabled;
-    var cache = this.props.cache;
-    var onClick = this.props.onClick;
-    var hover = this.state.hover;
+  render() {
+    var {width, height, images, glsl, uniforms, cache, onClick, cursorColor} = this.props;
+    var {progress, cursorEnabled, hover} = this.state;
     var hoverModeHovered = hover && cursorEnabled;
     var length = images.length;
     var i = circular(this.state.i, length);
@@ -96,7 +89,7 @@ var Vignette = React.createClass({
       background: "#000",
       position: "relative",
       userSelect: "none",
-      outline: hoverModeHovered ? "1px solid #FC6" : "1px solid #000",
+      outline: hoverModeHovered ? "1px solid "+cursorColor : "1px solid #000",
       width: width+"px",
       height: height+"px"
     }, this.props.style);
@@ -120,8 +113,8 @@ var Vignette = React.createClass({
       pointerEvents: "none",
       zIndex: 1,
       width: "2px",
-      background: "#FC6",
-      boxShadow: "0px 0px 4px rgba(255,150,80,1)"
+      background: cursorColor,
+      boxShadow: "0px 0px 4px "+cursorColor
     };
 
     var canvasStyle = {
@@ -163,33 +156,38 @@ var Vignette = React.createClass({
       />;
     }
 
+    var mouseEvents = {};
+    if (onClick) mouseEvents.onClick = onClick;
+    if (this.controlsMode !== NONE) {
+      mouseEvents.onMouseEnter = this.onMouseEnter;
+      mouseEvents.onMouseLeave = this.onMouseLeave;
+      mouseEvents.onMouseDown = this.onMouseDown;
+      mouseEvents.onMouseUp = this.onMouseUp;
+      mouseEvents.onMouseMove = this.onMouseMove;
+    }
+
     return <div
       style={style}
-      onClick={onClick}
-      onMouseDown={this.onMouseDown}
-      onMouseUp={this.onMouseUp}
-      onMouseMove={this.onMouseMove}
-      onMouseEnter={this.onMouseEnter}
-      onMouseLeave={this.onMouseLeave}>
+      {...mouseEvents}>
       {canvas}
       <div style={contentStyle}>{this.props.children}</div>
       <span style={cursorStyle}></span>
     </div>;
   },
 
-  progressForEvent: function (e) {
+  progressForEvent (e) {
     var node = this.getDOMNode();
     return (e.clientX - node.getBoundingClientRect().left) / node.clientWidth;
   },
 
-  setProgress: function (p) {
+  setProgress (p) {
     this.stop();
     this.setState({
       progress: p
     });
   },
 
-  onMouseDown: function (e) {
+  onMouseDown (e) {
     if (this.props.controlsMode === MOUSEDOWN) {
       e.preventDefault();
       this.setState({
@@ -199,7 +197,7 @@ var Vignette = React.createClass({
     }
   },
 
-  onMouseUp: function () {
+  onMouseUp () {
     if (this.props.controlsMode === MOUSEDOWN) {
       this.setState({
         cursorEnabled: false
@@ -208,14 +206,14 @@ var Vignette = React.createClass({
     }
   },
 
-  onMouseMove: function (e) {
+  onMouseMove (e) {
     if (this.props.controlsMode === HOVER || this.state.cursorEnabled) {
       e.preventDefault();
       this.setProgress(this.progressForEvent(e));
     }
   },
 
-  onMouseEnter: function (e) {
+  onMouseEnter (e) {
     this.setState({
       hover: true
     });
@@ -226,7 +224,7 @@ var Vignette = React.createClass({
     }
   },
 
-  onMouseLeave: function () {
+  onMouseLeave () {
     this.setState({
       hover: false
     });
@@ -243,20 +241,20 @@ var Vignette = React.createClass({
     }
   },
 
-  maybeRestart: function () {
+  maybeRestart () {
     if (this.props.autostart || this.props.startonleave)
       this.start();
     else if ("defaultProgress" in this.props)
       this.setProgress(this.props.defaultProgress);
   },
 
-  nextFromTo: function () {
+  nextFromTo () {
     var l = this.props.images.length;
     this.setState({
       i: circular(this.state.i+1, l)
     });
   },
-  start: function () {
+  start () {
     var transition = this.refs.transition;
     var self = this;
     var args = arguments;
@@ -291,10 +289,10 @@ var Vignette = React.createClass({
         });
     }());
   },
-  stop: function () {
+  stop () {
     this.running = false;
     if (this.refs.transition) this.refs.transition.abort();
   }
 });
 
-module.exports = Vignette;
+export default Vignette;

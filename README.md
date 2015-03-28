@@ -17,3 +17,4 @@ Used by...
 
 - [GLSL.io](http://glsl.io)
 - [Diaporama Maker](https://github.com/gre/diaporama-maker)
+- [glsl-transition-vignette-grid](https://github.com/glslio/glsl-transition-vignette-grid)

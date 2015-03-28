@@ -35,7 +35,8 @@ React.render(<div>
       glsl-transition-vignette
     </a>
   </h1>
-  <h2>Various examples</h2>
+
+  <h2>customizable GLSL Transition Vignette with hover controls</h2>
 
   <Vignette
     style={vignetteStyle}

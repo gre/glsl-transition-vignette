@@ -31,10 +31,9 @@
     "glsl-transition": "^0.7.0",
     "lodash": "^3.6.0",
     "q": "^1.2.0",
-    "raf": "^2.0.4"
+    "raf": "^2.0.4",
+    "babelify": "^5.0.4"
   },
   "devDependencies": {
-    "babel": "^4.7.16",
-    "babelify": "^5.0.4"
   }
 }

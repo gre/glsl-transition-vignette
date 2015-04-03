@@ -15,13 +15,17 @@ SharedCache.prototype = {
     this.transitions = {};
   },
   destroy: function () {
-    this.transitions.forEach(t => t.transition.destroy());
+    for (var k in this.transitions) {
+      this.transitions[k].transition.destroy();
+    }
     this._Transition = null;
     this.transitions = null;
     this.canvasTransition = null;
   },
   clear: function () {
-    this.transitions.forEach(t => t.transition.destroy());
+    for (var k in this.transitions) {
+      this.transitions[k].transition.destroy();
+    }
     this.transitions = {};
   },
   getAllIds: function () {

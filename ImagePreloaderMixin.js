@@ -1,6 +1,24 @@
 
 // Inspired by react-dnd
-var _cachedImages = {}, _readyImages = {};
+var _cachedImages = {}, _readyImages = {}, _pendingInstances = {};
+
+function inPending (instance, url) {
+  var pending = _pendingInstances[url];
+  return pending && pending.indexOf(instance) !== -1;
+}
+function addPending (instance, url) {
+  var pending = _pendingInstances[url];
+  if (!pending) _pendingInstances[url] = pending = [];
+  pending.push(instance);
+}
+function releasePending (url) {
+  (_pendingInstances[url]||[]).forEach(function (instance) {
+    if (instance.isMounted()) {
+      instance.forceUpdate();
+    }
+  });
+  delete _pendingInstances[url];
+}
 
 var ImagePreloaderMixin = {
   componentDidMount() {
@@ -12,7 +30,7 @@ var ImagePreloaderMixin = {
   },
 
   hasPreloadedImage (url) {
-    return _readyImages && !!_readyImages[url];
+    return !!_readyImages[url];
   },
 
   getPreloadedImage (url) {
@@ -22,7 +40,6 @@ var ImagePreloaderMixin = {
   },
 
   preloadImages() {
-    if (!_cachedImages) return false;
     var urls = this.getImageUrlsToPreload();
     var allLoaded = true;
     for (var i=0; i<urls.length; ++i) {
@@ -34,19 +51,20 @@ var ImagePreloaderMixin = {
   },
 
   preloadImage (url) {
+    if (!inPending(this, url)) {
+      addPending(this, url);
+    }
     if (!url || _cachedImages[url]) {
       return;
     }
     var img = new window.Image();
     img.onload = function () {
       _readyImages[url] = true;
-      if (this.isMounted()) {
-        this.forceUpdate();
-      }
-    }.bind(this);
+      releasePending(url);
+    };
     img.onerror = function () {
       delete _cachedImages[url];
-    }.bind(this);
+    };
     img.src = url;
     _cachedImages[url] = img;
   }

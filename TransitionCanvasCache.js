@@ -1,8 +1,6 @@
 import React from "react";
-import Q from "q";
 import memoize from "lodash/function/memoize";
 import extend from 'lodash/object/extend';
-import requestAnimationFrame from "raf";
 import uniformsEquals from "./uniformsEquals";
 
 var validSampler2D = React.PropTypes.oneOfType([
@@ -31,7 +29,6 @@ var TransitionCanvasCache = React.createClass({
     drawer: React.PropTypes.func.isRequired,
     resolution: React.PropTypes.number,
     delay: React.PropTypes.number
-    // TODO: add a "thumbnail" image parameter
   },
   getInitialProps () {
     return {
@@ -57,33 +54,40 @@ var TransitionCanvasCache = React.createClass({
   componentWillUnmount () {
     this.clearCache();
   },
-  componentDidUpdate () {
-    this.sync();
-  },
-  sync () {
-    if (!this.isMounted()) return;
-    if (this.props.glsl !== this.lastGlsl ||
-      this.props.to !== this.lastTo ||
-      this.props.from !== this.lastFrom ||
-      !uniformsEquals(this.props.uniforms, this.lastUniforms)
-      ) {
-      this._allUniforms = extend({ from: this.props.from, to: this.props.to }, this.props.uniforms);
+  componentDidUpdate (prevProps) {
+    const {
+      glsl,
+      from,
+      to,
+      uniforms,
+      width,
+      height,
+      drawer,
+      resolution
+    } = this.props;
+    if (to !== prevProps.to ||
+      from !== prevProps.from ||
+      glsl !== prevProps.glsl ||
+      width !== prevProps.width ||
+      height !== prevProps.height ||
+      drawer !== prevProps.drawer ||
+      resolution !== prevProps.resolution ||
+      !uniformsEquals(uniforms, prevProps.uniforms))
       this.resetCache();
-      this.setProgress(this.props.progress);
-    }
-    else if (this.props.progress !== this.lastProgress) {
-      this.setProgress(this.props.progress);
-    }
-    this.lastTo = this.props.to;
-    this.lastFrom = this.props.from;
-    this.lastUniforms = this.props.uniforms;
-    this.lastProgress = this.props.progress;
-    this.lastGlsl = this.props.glsl;
+    this.update();
   },
   drawer (i) {
-    return screenshot(this.props.drawer(i / this.props.resolution, this._allUniforms));
+    const {
+      resolution,
+      from,
+      to,
+      drawer,
+      uniforms
+    } = this.props;
+    return screenshot(drawer(i / resolution, from, to, uniforms));
   },
   clearCache () {
+    this._curDrawn = null;
     if (this.canvases) {
       for (var k in this.canvases.cache) {
         delete this.canvases.cache[k];
@@ -96,39 +100,20 @@ var TransitionCanvasCache = React.createClass({
     this.clearCache();
     this.canvases = memoize(this.drawer);
   },
-  setProgress (p) {
-    var i = Math.max(0, Math.min(Math.round(p * this.props.resolution), this.props.resolution));
+  update () {
+    const {
+      progress,
+      resolution
+    } = this.props;
+    var i = Math.max(0, Math.min(Math.round(progress * resolution), resolution));
+    if (i === this._curDrawn) return;
     if (this.canvases) {
       var canvas = this.canvases(i);
       if (canvas) {
+        this._curDrawn = i;
         this.ctx.drawImage(canvas, 0, 0);
       }
     }
-  },
-  animate (duration, easing) {
-    var d = Q.defer();
-    var start = Date.now();
-    var self = this;
-    this.abortRequest = false;
-    requestAnimationFrame(function loop () {
-      if (self.abortRequest) {
-        d.reject(new Error("TransitionCanvasCache: Transition Aborted"));
-        return;
-      }
-      var p = (Date.now() - start) / duration;
-      if (p<1) {
-        requestAnimationFrame(loop);
-        self.setProgress(easing(p));
-      }
-      else {
-        self.setProgress(easing(1));
-        d.resolve();
-      }
-    });
-    return d.promise;
-  },
-  abort () {
-    this.abortRequest = true;
   }
 });
 

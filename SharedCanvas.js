@@ -1,4 +1,6 @@
-import GlslTransition from "glsl-transition";
+import createGlslTransition from "glsl-transition";
+import createTexture from "gl-texture2d";
+import WeakMap from "weakmap-shim";
 
 function SharedCache () {
 }
@@ -9,14 +11,15 @@ SharedCache.prototype = {
     var canvasTransition = document.createElement("canvas");
     canvasTransition.width = dpr * width;
     canvasTransition.height = dpr * height;
-    var Transition = GlslTransition(canvasTransition);
-    this._Transition = Transition;
+    var gl = canvasTransition.getContext("webgl");
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    this.gl = gl;
     this.canvasTransition = canvasTransition;
     this.transitions = {};
   },
   destroy: function () {
     for (var k in this.transitions) {
-      this.transitions[k].transition.destroy();
+      this.transitions[k].transition.dispose();
     }
     this._Transition = null;
     this.transitions = null;
@@ -24,7 +27,7 @@ SharedCache.prototype = {
   },
   clear: function () {
     for (var k in this.transitions) {
-      this.transitions[k].transition.destroy();
+      this.transitions[k].transition.dispose();
     }
     this.transitions = {};
   },
@@ -32,36 +35,35 @@ SharedCache.prototype = {
     return Object.keys(this.transitions);
   },
   getTransitionDrawer: function (id) {
-    return this.transitions[id].res;
+    return this.transitions[id].render;
   },
   removeTransitionDrawer: function (id) {
     if (this.transitions[id]) {
-      this.transitions[id].transition.destroy();
+      this.transitions[id].transition.dispose();
       delete this.transitions[id];
     }
   },
   createTransitionDrawer: function (id, glsl) {
-    var transition = this._Transition(glsl);
+    const gl = this.gl;
+    const transition = createGlslTransition(gl, glsl);
     if (this.transitions[id]) {
-      this.transitions[id].destroy();
+      this.transitions[id].dispose();
     }
-    const res = function (p, uniforms) {
-      if (transition.core.reset()) {
-        for (let u in uniforms) {
-          var value = uniforms[u];
-          transition.core.setUniform(u, value);
-        }
-      }
-      transition.core.setUniform("progress", p);
-      transition.core.draw();
+    const textures = new WeakMap();
+
+    function texture (img) {
+      if (textures.has(img)) return textures.get(img);
+      const t = createTexture(gl, img);
+      textures.set(img, t);
+      return t;
+    }
+
+    const render = (p, from, to, uniforms) => {
+      transition.render(p, texture(from), texture(to), uniforms);
       return this.canvasTransition;
-    }.bind(this);
-    this.transitions[id] = {
-      glsl: glsl,
-      transition: transition,
-      res: res
     };
-    return res;
+    this.transitions[id] = { transition, render };
+    return render;
   }
 
 };

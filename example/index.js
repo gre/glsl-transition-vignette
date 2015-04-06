@@ -58,7 +58,6 @@ React.render(<div>
     width={400}
     height={300}
     autostart={true}
-    startonleave={true}
     controlsMode="mousedown"
     transitionDuration={1000}
     transitionDelay={0}>

@@ -64,6 +64,7 @@ var ImagePreloaderMixin = {
     };
     img.onerror = function () {
       delete _cachedImages[url];
+      delete _pendingInstances[url];
     };
     img.src = url;
     _cachedImages[url] = img;

@@ -1,7 +1,6 @@
 var React = require("react");
-var Q = require("q");
+var raf = require("raf");
 var extend = require('lodash/object/extend');
-var GlslTransition = require("glsl-transition");
 var TransitionCanvas = require("./TransitionCanvas");
 var TransitionCanvasCache = require("./TransitionCanvasCache");
 var ImagePreloaderMixin = require("./ImagePreloaderMixin");
@@ -25,7 +24,6 @@ var Vignette = React.createClass({
     height: React.PropTypes.number.isRequired,
     onClick: React.PropTypes.func,
     autostart: React.PropTypes.bool,
-    startonleave: React.PropTypes.bool,
     defaultProgress: React.PropTypes.number,
     transitionDuration: React.PropTypes.number,
     transitionDelay: React.PropTypes.number,
@@ -57,9 +55,11 @@ var Vignette = React.createClass({
   getInitialState() {
     return {
       hover: false,
+      down: false,
+      hoverProgress: this.props.defaultProgress,
       progress: this.props.defaultProgress,
       i: 0,
-      cursorEnabled: this.props.controlsMode === HOVER
+      startTime: null
     };
   },
 
@@ -67,29 +67,86 @@ var Vignette = React.createClass({
     return this.props.images;
   },
 
+  componentDidMount() {
+  },
+
   componentDidUpdate() {
-    if (!this._neverStarted && this.preloadImages()) {
-      this._neverStarted = true;
-      if (this.props.autostart)
-        this.start();
+    if (!this._running && this.props.autostart && !this.isControlled() && this.preloadImages())
+      raf(this.update);
+  },
+
+  update (t) {
+    if (this.isControlled()) {
+      this._running = false;
+      return;
+    }
+    this._running = true;
+    raf(this.update);
+    const {
+      transitionDuration,
+      transitionDelay,
+      transitionEasing,
+      images
+    } = this.props;
+    const {
+      startTime,
+      progress
+    } = this.state;
+    if (!startTime) this.setState({ startTime: t });
+    const dt = t-(startTime||t);
+    if (dt > transitionDuration + transitionDelay) {
+      const i = circular(this.state.i+1, images.length);
+      this.setState({
+        progress: 0,
+        startTime: t,
+        i
+      });
+    }
+    else if (dt <= transitionDuration) {
+      const p = transitionEasing(dt / transitionDuration);
+      this.setState({ progress: p });
+    }
+    else if (progress !== 1) {
+      this.setState({ progress: 1 });
     }
   },
 
+  isControlled() {
+    const controlsMode = this.props.controlsMode;
+    const { down, hover } = this.state;
+    return controlsMode===HOVER && hover || controlsMode===MOUSEDOWN && down;
+  },
+
   render() {
-    var {width, height, images, glsl, uniforms, cache, onClick, cursorColor} = this.props;
-    var {progress, cursorEnabled, hover} = this.state;
-    var hoverModeHovered = hover && cursorEnabled;
-    var length = images.length;
-    var i = circular(this.state.i, length);
-    var j = circular(i+1, length);
-    var from = this.getPreloadedImage(images[i]);
-    var to = this.getPreloadedImage(images[j]);
+    const {
+      width,
+      height,
+      images,
+      glsl,
+      uniforms,
+      cache,
+      onClick,
+      cursorColor,
+      controlsMode,
+      defaultProgress
+    } = this.props;
+    const {
+      progress,
+      down,
+      hoverProgress,
+      i
+    } = this.state;
+    const length = images.length;
+    const from = this.getPreloadedImage(images[circular(i, length)]);
+    const to = this.getPreloadedImage(images[circular(i+1, length)]);
+    const cursorControlled = this.isControlled();
+    const p = cursorControlled ? hoverProgress : (!this._running ? defaultProgress : progress);
 
     var style = extend({
       background: "#000",
       position: "relative",
       userSelect: "none",
-      outline: hoverModeHovered ? "1px solid "+cursorColor : "1px solid #000",
+      outline: cursorControlled ? "1px solid "+cursorColor : "1px solid #000",
       width: width+"px",
       height: height+"px"
     }, this.props.style);
@@ -105,10 +162,10 @@ var Vignette = React.createClass({
     };
 
     var cursorStyle = {
-      display: hoverModeHovered ? "block" : "none",
+      display: cursorControlled ? "block" : "none",
       position: "absolute",
       top: 0,
-      left: (progress * 100)+"%",
+      left: (p * 100)+"%",
       height: "100%",
       pointerEvents: "none",
       zIndex: 1,
@@ -129,13 +186,12 @@ var Vignette = React.createClass({
     if (this.preloadImages()) {
       canvas = cache ?
       <TransitionCanvasCache
-        ref="transition"
         style={canvasStyle}
-        progress={progress}
         width={width}
         height={height}
         glsl={glsl}
         uniforms={uniforms}
+        progress={p}
         from={from}
         to={to}
         drawer={cache.drawer}
@@ -144,13 +200,12 @@ var Vignette = React.createClass({
       />
       :
       <TransitionCanvas
-        ref="transition"
         style={canvasStyle}
-        progress={progress}
         width={width}
         height={height}
         glsl={glsl}
         uniforms={uniforms}
+        progress={p}
         from={from}
         to={to}
       />;
@@ -158,12 +213,19 @@ var Vignette = React.createClass({
 
     var mouseEvents = {};
     if (onClick) mouseEvents.onClick = onClick;
-    if (this.controlsMode !== NONE) {
+    if (controlsMode === HOVER) {
+      mouseEvents.onMouseEnter = this.onMouseEnter;
+      mouseEvents.onMouseLeave = this.onMouseLeave;
+      mouseEvents.onMouseMove = this.onMouseMove;
+    }
+    else if (controlsMode === MOUSEDOWN) {
       mouseEvents.onMouseEnter = this.onMouseEnter;
       mouseEvents.onMouseLeave = this.onMouseLeave;
       mouseEvents.onMouseDown = this.onMouseDown;
-      mouseEvents.onMouseUp = this.onMouseUp;
-      mouseEvents.onMouseMove = this.onMouseMove;
+      if (down) {
+        mouseEvents.onMouseUp = this.onMouseUp;
+        mouseEvents.onMouseMove = this.onMouseMove;
+      }
     }
 
     return <div
@@ -180,118 +242,40 @@ var Vignette = React.createClass({
     return (e.clientX - node.getBoundingClientRect().left) / node.clientWidth;
   },
 
-  setProgress (p) {
-    this.stop();
+  // N.B. following mouse events are only enable under some conditions (see render())
+
+  onMouseDown (e) {
     this.setState({
-      progress: p
+      down: true,
+      hoverProgress: this.progressForEvent(e)
     });
   },
 
-  onMouseDown (e) {
-    if (this.props.controlsMode === MOUSEDOWN) {
-      e.preventDefault();
-      this.setState({
-        cursorEnabled: true
-      });
-      this.setProgress(this.progressForEvent(e));
-    }
-  },
-
   onMouseUp () {
-    if (this.props.controlsMode === MOUSEDOWN) {
-      this.setState({
-        cursorEnabled: false
-      });
-      this.maybeRestart();
-    }
+    this.setState({
+      down: false
+    });
   },
 
   onMouseMove (e) {
-    if (this.props.controlsMode === HOVER || this.state.cursorEnabled) {
-      e.preventDefault();
-      this.setProgress(this.progressForEvent(e));
-    }
+    e.preventDefault();
+    this.setState({
+      hoverProgress: this.progressForEvent(e)
+    });
   },
 
   onMouseEnter (e) {
     this.setState({
-      hover: true
+      hover: true,
+      hoverProgress: this.progressForEvent(e)
     });
-    if (this.props.controlsMode === HOVER) {
-      if (this.props.autostart || this.props.startonleave)
-        this.stop();
-      this.setProgress(this.progressForEvent(e));
-    }
   },
 
   onMouseLeave () {
     this.setState({
-      hover: false
+      hover: false,
+      down: false
     });
-    if (this.props.controlsMode === MOUSEDOWN) {
-      if (this.state.cursorEnabled) {
-        this.setState({
-          cursorEnabled: false
-        });
-        this.maybeRestart();
-      }
-    }
-    else {
-      this.maybeRestart();
-    }
-  },
-
-  maybeRestart () {
-    if (this.props.autostart || this.props.startonleave)
-      this.start();
-    else if ("defaultProgress" in this.props)
-      this.setProgress(this.props.defaultProgress);
-  },
-
-  nextFromTo () {
-    var l = this.props.images.length;
-    this.setState({
-      i: circular(this.state.i+1, l)
-    });
-  },
-  start () {
-    var transition = this.refs.transition;
-    var self = this;
-    var args = arguments;
-    this.restart = function () {
-      return self.start.apply(self, args);
-    };
-    this.running = true;
-    return (function loop () {
-      if (!self.isMounted()) self.stop();
-      if (!self.running) return;
-      return Q.fcall(transition.animate.bind(transition, self.props.transitionDuration, self.props.transitionEasing))
-        .then(function (result) {
-          if (result) self.props.onTransitionPerformed(result);
-          return result;
-        })
-        .then(function () {
-          return Q.delay(self.props.transitionDelay);
-        })
-        .then(function () {
-          if (!self.isMounted()) self.stop();
-          else self.nextFromTo();
-        })
-        .then(loop)
-        .fail(function(e){
-          // Recover an interrupted animation
-          if (e instanceof GlslTransition.TransitionAbortedError) {
-            return Q.delay(200).then(loop);
-          }
-          else {
-            console.log("TransitionViewer transition anormally aborted", e.stack);
-          }
-        });
-    }());
-  },
-  stop () {
-    this.running = false;
-    if (this.refs.transition) this.refs.transition.abort();
   }
 });
 

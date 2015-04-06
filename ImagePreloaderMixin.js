@@ -39,7 +39,7 @@ var ImagePreloaderMixin = {
     }
     var img = new window.Image();
     img.onload = function () {
-      this._readyImages[url] = true;
+      _readyImages[url] = true;
       if (this.isMounted()) {
         this.forceUpdate();
       }

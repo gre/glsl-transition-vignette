@@ -44,6 +44,10 @@ var TransitionCanvasCache = React.createClass({
     }, this.props.style);
     return <canvas width={width*dpr} height={height*dpr} style={style}></canvas>;
   },
+  sync: function () {
+    this.resetCache();
+    this.update();
+  },
   componentDidMount () {
     this.ctx = this.getDOMNode().getContext("2d");
     if (this.props.delay)

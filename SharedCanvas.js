@@ -25,12 +25,6 @@ SharedCache.prototype = {
     this.transitions = null;
     this.canvasTransition = null;
   },
-  clear: function () {
-    for (var k in this.transitions) {
-      this.transitions[k].transition.dispose();
-    }
-    this.transitions = {};
-  },
   getAllIds: function () {
     return Object.keys(this.transitions);
   },
@@ -47,7 +41,7 @@ SharedCache.prototype = {
     const gl = this.gl;
     const transition = createGlslTransition(gl, glsl);
     if (this.transitions[id]) {
-      this.transitions[id].dispose();
+      this.transitions[id].transition.dispose();
     }
     const textures = new WeakMap();
 

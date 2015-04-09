@@ -51,11 +51,12 @@ var TransitionCanvasCache = React.createClass({
   componentDidMount () {
     this.ctx = this.getDOMNode().getContext("2d");
     if (this.props.delay)
-      setTimeout(this.sync, this.props.delay);
+      this.timeout = setTimeout(this.sync, this.props.delay);
     else
       this.sync();
   },
   componentWillUnmount () {
+    clearTimeout(this.timeout);
     this.clearCache();
   },
   componentDidUpdate (prevProps) {

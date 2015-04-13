@@ -28,16 +28,17 @@ var TransitionCanvasCache = React.createClass({
     progress: React.PropTypes.number.isRequired,
     drawer: React.PropTypes.func.isRequired,
     resolution: React.PropTypes.number,
-    delay: React.PropTypes.number
+    delay: React.PropTypes.number,
+    dpr: React.PropTypes.number
   },
-  getInitialProps () {
+  getDefaultProps () {
     return {
-      resolution: this.props.width
+      resolution: 64,
+      dpr: 1
     };
   },
   render () {
-    var dpr = window.devicePixelRatio || 1;
-    var {width, height} = this.props;
+    var {width, height, dpr } = this.props;
     var style = extend({
       width: width+"px",
       height: height+"px"
@@ -67,6 +68,7 @@ var TransitionCanvasCache = React.createClass({
       uniforms,
       width,
       height,
+      dpr,
       drawer,
       resolution
     } = this.props;
@@ -75,6 +77,7 @@ var TransitionCanvasCache = React.createClass({
       glsl !== prevProps.glsl ||
       width !== prevProps.width ||
       height !== prevProps.height ||
+      dpr !== prevProps.dpr ||
       drawer !== prevProps.drawer ||
       resolution !== prevProps.resolution ||
       !uniformsEquals(uniforms, prevProps.uniforms))
@@ -116,7 +119,8 @@ var TransitionCanvasCache = React.createClass({
       var canvas = this.canvases(i);
       if (canvas) {
         this._curDrawn = i;
-        this.ctx.drawImage(canvas, 0, 0);
+        const dest = this.ctx.canvas;
+        this.ctx.drawImage(canvas, 0, 0, dest.width, dest.height);
       }
     }
   }

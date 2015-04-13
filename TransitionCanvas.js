@@ -17,11 +17,16 @@ var TransitionCanvas = React.createClass({
     to: validSampler2D.isRequired,
     uniforms: React.PropTypes.object.isRequired,
     width: React.PropTypes.number.isRequired,
-    height: React.PropTypes.number.isRequired
+    height: React.PropTypes.number.isRequired,
+    dpr: React.PropTypes.number
+  },
+  getDefaultProps () {
+    return {
+      dpr: 1
+    };
   },
   render () {
-    var dpr = window.devicePixelRatio || 1;
-    var {width, height, style} = this.props;
+    var {width, height, dpr, style} = this.props;
     var styles = extend({
       width: width+"px",
       height: height+"px"

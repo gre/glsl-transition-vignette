@@ -6,8 +6,8 @@ function SharedCache () {
 }
 
 SharedCache.prototype = {
-  init: function (width, height) {
-    var dpr = window.devicePixelRatio || 1;
+  init: function (width, height, dpr) {
+    dpr = dpr || 1;
     var canvasTransition = document.createElement("canvas");
     canvasTransition.width = dpr * width;
     canvasTransition.height = dpr * height;
@@ -16,6 +16,11 @@ SharedCache.prototype = {
     this.gl = gl;
     this.canvasTransition = canvasTransition;
     this.transitions = {};
+  },
+  resize: function (width, height, dpr) {
+    dpr = dpr || 1;
+    this.canvasTransition.width = dpr * width;
+    this.canvasTransition.height = dpr * height;
   },
   destroy: function () {
     for (var k in this.transitions) {
@@ -62,9 +67,9 @@ SharedCache.prototype = {
 
 };
 
-SharedCache.create = function (width, height) {
+SharedCache.create = function (width, height, dpr) {
   var s = new SharedCache();
-  s.init(width, height);
+  s.init(width, height, dpr);
   return s;
 };
 

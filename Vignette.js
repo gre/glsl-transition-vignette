@@ -22,6 +22,7 @@ var Vignette = React.createClass({
     uniforms: React.PropTypes.object.isRequired,
     width: React.PropTypes.number.isRequired,
     height: React.PropTypes.number.isRequired,
+    dpr: React.PropTypes.number,
     onClick: React.PropTypes.func,
     autostart: React.PropTypes.bool,
     defaultProgress: React.PropTypes.number,
@@ -48,7 +49,8 @@ var Vignette = React.createClass({
       transitionDuration: 1500,
       transitionDelay: 100,
       transitionEasing: x => x,
-      cursorColor: "#FC6"
+      cursorColor: "#FC6",
+      dpr: window.devicePixelRatio || 1
     };
   },
 
@@ -121,6 +123,7 @@ var Vignette = React.createClass({
     const {
       width,
       height,
+      dpr,
       images,
       glsl,
       uniforms,
@@ -189,6 +192,7 @@ var Vignette = React.createClass({
         style={canvasStyle}
         width={width}
         height={height}
+        dpr={dpr}
         glsl={glsl}
         uniforms={uniforms}
         progress={p}
@@ -203,6 +207,7 @@ var Vignette = React.createClass({
         style={canvasStyle}
         width={width}
         height={height}
+        dpr={dpr}
         glsl={glsl}
         uniforms={uniforms}
         progress={p}
